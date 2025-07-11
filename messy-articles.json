@@ -1,0 +1,17 @@
+{
+  "scenario1": {
+    "id": "agent-installation-error",
+    "title": "Agent Installation Error 1603",
+    "content": "# agent installation error 1603\n\nCustomer getting error when trying install cyberco edr agent on windows server. they said it keep failing with error code 1603. they tried to run as administrator but same issue.\n\n## Environment\nwindows server 2019\ncyberco edr 6.7.0\ndomain joined server\n\n## Issue Description\nwhen customer run CyberCoAgent.msi get error \"MSI installation terminated prematurely\". Error occurs during installation process. Customer need this fix urgently because its critical server.\n\n### steps tried\n- run as admin\n- restart server\n- download new installer\n\nall step failed with same error.\n\n## Error Details\nError Code: 1603\nLog show: installation terminated unexpectedly\nServer specs: 16gb ram, windows server 2019 standard\n\nplease help resolve this issue asap."
+  },
+  "scenario2": {
+    "id": "sql-server-cpu-usage",
+    "title": "SQL Server High CPU Usage",
+    "content": "# High CPU usage on SQL Server after CyberCo installation\n\nour main sql server running very slow since we installed cyberco edr agent. the cpu usage is constantly at 90-95% and users complaining about slow database queries.\n\n## Environment Details\n- Windows Server 2016\n- SQL Server 2017 Enterprise\n- CyberCo EDR agent version 6.7.1\n- Server specs: 32GB RAM, 12 cores\n\n## Problem\nThe mfemms.exe process using too much cpu resources (around 60-70% constantly). this causing our erp system to run very slow and affecting business operations.\n\nwe tried:\n1. restart cyberco services - cpu usage come back\n2. restart sql server - temporary fix but problem return\n3. check for updates - already latest version\n\n## Impact\n- database queries taking 5x longer\n- reports timing out\n- users cannot access system efficiently\n- business operations affected\n\nwe need urgent solution to reduce cpu usage while keeping security protection active.\n\n### Additional Info\nSQL server handles our main ERP database with 500+ concurrent users. downtime not acceptable during business hours."
+  },
+  "scenario3": {
+    "id": "agent-offline-vpn",
+    "title": "Agent Offline After VPN Update",
+    "content": "# Agents going offline after VPN client update\n\nhello support team, we have issue with cyberco agents going offline after we updated our vpn software last week.\n\n## Details\n- Updated from cisco anyconnect 4.9 to 5.0\n- about 35 remote workers affected\n- agents were working fine before vpn update\n- users can connect to vpn and access internet but agents show offline in console\n\n### Environment\nWindows 10 enterprise\nCyberCo EDR 6.7.0\nCisco AnyConnect 5.0\n\n## what we tried\n1. reboot user machines - didnt work\n2. restart cyberco services - no change\n3. reconnect vpn - agents still offline\n\nsome users are travelling so we need remote solution. agents last communicated 6 days ago which matches when we did vpn update.\n\n### Symptoms\n- agents show offline in management console\n- last communication timestamp stuck on update date\n- real-time protection still running on endpoints\n- no error messages in event viewer\n- vpn connectivity working for other applications\n\nplease advise how to fix this remotely as users are in different locations and cannot visit office.\n\nthis is affecting our security coverage for remote workforce."
+  }
+}
