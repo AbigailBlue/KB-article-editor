@@ -329,6 +329,73 @@
             margin-bottom: 0;
         }
 
+        .custom-input {
+            margin-top: 1rem;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: none;
+        }
+
+        .custom-input.show {
+            display: block;
+        }
+
+        .custom-input textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            resize: vertical;
+            background: #f8fafc;
+        }
+
+        .custom-input textarea:focus {
+            outline: none;
+            border-color: #06b6d4;
+            box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.1);
+        }
+
+        .custom-input label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .api-status {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: none;
+        }
+
+        .api-status.show {
+            display: block;
+        }
+
+        .api-status.enabled {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-color: #bbf7d0;
+            color: #166534;
+        }
+
+        .api-status.disabled {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border-color: #fecaca;
+            color: #dc2626;
+        }
+
         @media (max-width: 1024px) {
             .panels {
                 grid-template-columns: 1fr;
@@ -373,11 +440,34 @@
                     <option value="scenario1">Agent Installation Error 1603</option>
                     <option value="scenario2">SQL Server High CPU Usage</option>
                     <option value="scenario3">Agent Offline After VPN Update</option>
+                    <option value="custom">✨ Enter Custom Article (AI-Powered)</option>
                 </select>
             </div>
             <button class="transform-btn" id="transformBtn" disabled>
                 ✨ Polish & Format Article
             </button>
+        </div>
+
+        <div class="api-status" id="apiStatus">
+            <p><strong>Claude AI Status:</strong> <span id="apiStatusText">Checking...</span></p>
+        </div>
+
+        <div class="custom-input" id="customInput">
+            <label for="customArticle">Enter your messy article or support case:</label>
+            <textarea id="customArticle" placeholder="Paste your draft article here...
+
+Example format:
+# Issue Title
+
+Customer description of the problem...
+
+## Environment
+- Operating System: 
+- Product Version:
+- Additional details...
+
+## Problem Description
+Detailed description of the issue..."></textarea>
         </div>
 
         <div class="panels">
@@ -418,6 +508,7 @@
         </div>
     </div>
 
+    <!-- Claude API handled by backend server -->
     <script>
         let messyArticles = {};
         let polishedArticles = {};
@@ -450,15 +541,40 @@
         const exportButtons = document.getElementById('exportButtons');
         const technicalReview = document.getElementById('technicalReview');
         const reviewContent = document.getElementById('reviewContent');
+        const customInput = document.getElementById('customInput');
+        const customArticle = document.getElementById('customArticle');
+        const apiStatus = document.getElementById('apiStatus');
+        const apiStatusText = document.getElementById('apiStatusText');
 
         // Event listeners
         scenarioSelect.addEventListener('change', displayDraftArticle);
         transformBtn.addEventListener('click', transformToPolished);
+        customArticle.addEventListener('input', updateTransformButton);
 
         // Export button listeners
         document.getElementById('exportPDF').addEventListener('click', exportToPDF);
         document.getElementById('exportTXT').addEventListener('click', exportToTXT);
         document.getElementById('exportHTML').addEventListener('click', copyToClipboard);
+
+        // Check backend API status
+        async function initializeClaudeAPI() {
+            try {
+                const response = await fetch('/api/status');
+                const status = await response.json();
+                
+                if (status.apiEnabled) {
+                    apiStatus.className = 'api-status show enabled';
+                    apiStatusText.textContent = status.status + ' for Custom Articles';
+                } else {
+                    apiStatus.className = 'api-status show disabled';
+                    apiStatusText.textContent = status.status + ' - Demo Mode Only';
+                }
+            } catch (error) {
+                console.error('Failed to check API status:', error);
+                apiStatus.className = 'api-status show disabled';
+                apiStatusText.textContent = 'Backend Not Connected - Demo Mode Only';
+            }
+        }
 
         // Load article data on page initialization
         async function loadArticleData() {
@@ -487,7 +603,20 @@
             polishedContent.innerHTML = '<div class="placeholder">Click "Polish & Format Article" to generate the professional knowledge base article</div>';
             exportButtons.style.display = 'none';
             technicalReview.style.display = 'none';
-            transformBtn.disabled = !selectedScenario;
+            
+            if (selectedScenario === 'custom') {
+                // Show custom input area
+                customInput.classList.add('show');
+                apiStatus.classList.add('show');
+                draftContent.innerHTML = '<div class="placeholder">Enter your article in the text area above, then click "Polish & Format Article"</div>';
+                updateTransformButton();
+                return;
+            } else {
+                // Hide custom input area
+                customInput.classList.remove('show');
+                apiStatus.classList.remove('show');
+                transformBtn.disabled = !selectedScenario;
+            }
             
             if (!selectedScenario || !messyArticles[selectedScenario]) {
                 draftContent.innerHTML = '<div class="placeholder">Select a scenario above to view the draft article with formatting issues</div>';
@@ -501,8 +630,20 @@
             `;
         }
 
-        function transformToPolished() {
+        function updateTransformButton() {
+            if (scenarioSelect.value === 'custom') {
+                transformBtn.disabled = !customArticle.value.trim();
+            }
+        }
+
+        async function transformToPolished() {
             const selectedScenario = scenarioSelect.value;
+            
+            if (selectedScenario === 'custom') {
+                await transformCustomArticle();
+                return;
+            }
+            
             if (!selectedScenario || !polishedArticles[selectedScenario]) {
                 alert('Please select a scenario first');
                 return;
@@ -538,6 +679,70 @@
             }, 1500);
         }
 
+        async function transformCustomArticle() {
+            const customText = customArticle.value.trim();
+            if (!customText) {
+                alert('Please enter an article to transform');
+                return;
+            }
+
+            // Show loading animation
+            polishedContent.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>🤖 AI is polishing your article...</p>
+                    <p style="font-size: 0.9rem; opacity: 0.8;">This may take 10-30 seconds</p>
+                </div>
+            `;
+
+            try {
+                // Call backend API
+                const response = await fetch('/api/transform', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        customText: customText
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Transformation failed');
+                }
+
+                // Format the result
+                const formattedContent = formatContent(data.result.content);
+                
+                polishedContent.innerHTML = `
+                    <div class="polished-content">${formattedContent}</div>
+                `;
+
+                // Show export buttons
+                exportButtons.style.display = 'flex';
+
+                // Generate technical review for custom content
+                const customReview = generateCustomTechnicalReview(customText);
+                if (customReview.length > 0) {
+                    displayTechnicalReview(customReview);
+                }
+
+            } catch (error) {
+                console.error('AI transformation failed:', error);
+                polishedContent.innerHTML = `
+                    <div class="placeholder" style="color: #dc2626;">
+                        <p><strong>AI Transformation Failed</strong></p>
+                        <p>${error.message}</p>
+                        <p style="font-size: 0.9rem; margin-top: 1rem;">
+                            Check that the backend server is running and API key is configured.
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
         function formatContent(content) {
             return content
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -546,6 +751,53 @@
                 .replace(/\n\n/g, '</p><p>')
                 .replace(/^(.+)$/gm, '<p>$1</p>')
                 .replace(/<p><\/p>/g, '');
+        }
+
+        function formatKBArticle(apiResult) {
+            return `
+                <h2>${apiResult.title}</h2>
+                
+                <h3><strong>Prerequisites</strong></h3>
+                <ul>
+                    ${apiResult.prerequisites.map(item => `<li>${item}</li>`).join('')}
+                </ul>
+                
+                <h3><strong>Resolution Steps</strong></h3>
+                <ol>
+                    ${apiResult.resolutionSteps.map(step => `<li>${step}</li>`).join('')}
+                </ol>
+                
+                <h3><strong>Verification</strong></h3>
+                <ul>
+                    ${apiResult.verification.map(item => `<li>${item}</li>`).join('')}
+                </ul>
+                
+                <h3><strong>Related Articles</strong></h3>
+                <ul>
+                    ${apiResult.relatedArticles.map(article => `<li>${article}</li>`).join('')}
+                </ul>
+            `;
+        }
+
+        function generateCustomTechnicalReview(customText) {
+            const reviews = [];
+            
+            Object.entries(reviewPatterns).forEach(([key, pattern]) => {
+                if (pattern.pattern.test(customText)) {
+                    reviews.push(pattern.suggestion);
+                }
+            });
+            
+            // Add some custom checks for user content
+            if (!customText.includes('Prerequisites') && !customText.includes('requirements')) {
+                reviews.push('Consider adding a prerequisites or requirements section');
+            }
+            
+            if (!customText.includes('step') && !customText.includes('procedure')) {
+                reviews.push('Content may benefit from step-by-step procedures');
+            }
+            
+            return reviews.slice(0, 5); // Limit to 5 suggestions
         }
 
         function displayTechnicalReview(reviews) {
@@ -628,6 +880,7 @@
 
         // Initialize the application
         loadArticleData();
+        initializeClaudeAPI();
     </script>
 </body>
 </html>
