@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/status.js": {
+      "runtime": "@vercel/node"
+    },
+    "api/transform.js": {
+      "runtime": "@vercel/node"
+    }
+  },
+  "env": {
+    "ANTHROPIC_API_KEY": "@anthropic_api_key"
+  }
+}
