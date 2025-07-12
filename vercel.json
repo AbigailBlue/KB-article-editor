@@ -7,9 +7,6 @@
         "runtime": "@vercel/node"
       }
     },
-    "env": {
-      "ANTHROPIC_API_KEY": "@anthropic_api_key"
-    },
     "headers": [
       {
         "source": "/api/(.*)",
