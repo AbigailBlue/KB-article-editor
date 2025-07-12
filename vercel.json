@@ -1,12 +1,4 @@
  {
-    "functions": {
-      "api/status.js": {
-        "runtime": "@vercel/node"
-      },
-      "api/transform.js": {
-        "runtime": "@vercel/node"
-      }
-    },
     "headers": [
       {
         "source": "/api/(.*)",
